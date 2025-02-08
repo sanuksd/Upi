@@ -1,0 +1,127 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UPI Coupon Redemption</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 50px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            max-width: 500px;
+            margin: auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        input[type="text"], input[type="email"] {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        .message {
+            padding: 10px;
+            margin-top: 20px;
+            display: none;
+        }
+        .error {
+            color: red;
+            background-color: #f8d7da;
+        }
+        .success {
+            color: green;
+            background-color: #d4edda;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>UPI Coupon Redemption</h2>
+        <p>Enter your coupon code to redeem your offer:</p>
+        
+        <input type="text" id="couponCode" placeholder="Enter coupon code" />
+        <button onclick="redeemCoupon()">Redeem</button>
+
+        <div id="message" class="message"></div>
+        
+        <div id="upiForm" style="display:none;">
+            <p>Enter your UPI address to redeem:</p>
+            <input type="text" id="upiAddress" placeholder="Enter UPI address" />
+            <button onclick="redeemUPI()">Submit UPI Address</button>
+        </div>
+    </div>
+
+    <script>
+        // Simulate valid coupon codes
+        const validCoupons = ['A-1526-R', 'B-1878-M', 'B-7830-H', 'C-0322-U', 'D-3955-N',
+'D-4284-G', 'E-0527-V', 'E-8939-A', 'F-8535-I', 'G-6080-N'];
+
+        function redeemCoupon() {
+            const couponCode = document.getElementById('couponCode').value;
+            const messageDiv = document.getElementById('message');
+            
+            // Check if coupon has been redeemed
+            if (localStorage.getItem('redeemed') === 'true') {
+                messageDiv.textContent = 'You have already redeemed your coupon.';
+                messageDiv.className = 'message error';
+                messageDiv.style.display = 'block';
+                return;
+            }
+
+            // Check if the coupon is valid
+            if (validCoupons.includes(couponCode)) {
+                messageDiv.textContent = 'Coupon is valid! Enter your UPI address to redeem.';
+                messageDiv.className = 'message success';
+                messageDiv.style.display = 'block';
+                
+                // Show UPI address form
+                document.getElementById('upiForm').style.display = 'block';
+            } else {
+                messageDiv.textContent = 'Invalid coupon code!';
+                messageDiv.className = 'message error';
+                messageDiv.style.display = 'block';
+            }
+        }
+
+        function redeemUPI() {
+            const upiAddress = document.getElementById('upiAddress').value;
+            const messageDiv = document.getElementById('message');
+            
+            if (upiAddress) {
+                // Simulate success
+                messageDiv.textContent = 'Success! Your coupon has been redeemed.';
+                messageDiv.className = 'message success';
+                messageDiv.style.display = 'block';
+
+                // Prevent multiple redemptions
+                localStorage.setItem('redeemed', 'true');
+                document.getElementById('upiForm').style.display = 'none';
+            } else {
+                messageDiv.textContent = 'Please enter a valid UPI address!';
+                messageDiv.className = 'message error';
+                messageDiv.style.display = 'block';
+            }
+        }
+    </script>
+
+</body>
+</html>
