@@ -156,9 +156,9 @@
         // Initialize Firebase
         const app = firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
+        const adminPassword = "admin123";
 
         // ========== CORE FUNCTIONS ========== //
-        // Page Navigation
         function showPage(pageId) {
             document.querySelectorAll('.page').forEach(page => {
                 page.classList.remove('active');
@@ -166,90 +166,117 @@
             document.getElementById(pageId).classList.add('active');
         }
 
-        // Coupon Validation
         async function validateCoupon() {
-            const code = document.getElementById('couponCode').value;
-            const snapshot = await db.collection('coupons').where('code', '==', code).get();
-            
-            if (!snapshot.empty) {
-                showPage('upi');
-            } else {
-                document.getElementById('couponMessage').textContent = "Invalid coupon code!";
-            }
-        }
-
-        // UPI Submission
-        async function submitUPI() {
-            const upiId = document.getElementById('upiId').value;
-            const txnId = 'TXN-' + Date.now();
-
-            await db.collection('transactions').add({
-                id: txnId,
-                upi: upiId,
-                status: 'Pending',
-                timestamp: new Date().toLocaleString()
-            });
-
-            showPage('success');
-            document.getElementById('transactionId').textContent = txnId;
-
-            // Timer
-            let seconds = 15;
-            const timerInterval = setInterval(() => {
-                document.getElementById('timer').textContent = --seconds;
-                if (seconds <= 0) {
-                    clearInterval(timerInterval);
-                    showPage('home');
+            try {
+                const code = document.getElementById('couponCode').value;
+                const snapshot = await db.collection('coupons').where('code', '==', code).get();
+                if (!snapshot.empty) {
+                    showPage('upi');
+                } else {
+                    document.getElementById('couponMessage').textContent = "Invalid coupon code!";
                 }
-            }, 1000);
-        }
-
-        // Track Payment
-        async function checkPayment() {
-            const txnId = document.getElementById('trackTxnId').value;
-            const snapshot = await db.collection('transactions').where('id', '==', txnId).get();
-            
-            if (snapshot.empty) {
-                document.getElementById('paymentStatus').textContent = "Invalid Transaction ID!";
-            } else {
-                const txn = snapshot.docs[0].data();
-                document.getElementById('paymentStatus').textContent = `Status: ${txn.status}`;
+            } catch (error) {
+                console.error("Coupon validation error:", error);
             }
         }
 
-        // Admin Functions
-        const adminPassword = "admin123";
+        async function submitUPI() {
+            try {
+                const upiId = document.getElementById('upiId').value;
+                const txnId = 'TXN-' + Date.now();
+                
+                await db.collection('transactions').add({
+                    id: txnId,
+                    upi: upiId,
+                    status: 'Pending',
+                    timestamp: new Date().toLocaleString()
+                });
 
-        function loginAdmin() {
-            if (document.getElementById('adminPass').value === adminPassword) {
-                document.getElementById('adminPanel').style.display = 'block';
-                loadPendingPayments();
+                showPage('success');
+                document.getElementById('transactionId').textContent = txnId;
+
+                // Timer
+                let seconds = 15;
+                const timerInterval = setInterval(() => {
+                    document.getElementById('timer').textContent = --seconds;
+                    if (seconds <= 0) {
+                        clearInterval(timerInterval);
+                        showPage('home');
+                    }
+                }, 1000);
+            } catch (error) {
+                console.error("UPI submission error:", error);
+            }
+        }
+
+        async function checkPayment() {
+            try {
+                const txnId = document.getElementById('trackTxnId').value;
+                const snapshot = await db.collection('transactions').where('id', '==', txnId).get();
+                
+                if (snapshot.empty) {
+                    document.getElementById('paymentStatus').textContent = "Invalid Transaction ID!";
+                } else {
+                    const txn = snapshot.docs[0].data();
+                    document.getElementById('paymentStatus').textContent = `Status: ${txn.status}`;
+                }
+            } catch (error) {
+                console.error("Payment check error:", error);
+            }
+        }
+
+        async function loginAdmin() {
+            try {
+                const password = document.getElementById('adminPass').value;
+                if (password === adminPassword) {
+                    document.getElementById('adminPanel').style.display = 'block';
+                    await loadPendingPayments();
+                } else {
+                    alert('Wrong password!');
+                }
+            } catch (error) {
+                console.error("Admin login error:", error);
             }
         }
 
         async function addCoupon() {
-            const newCode = document.getElementById('newCoupon').value;
-            await db.collection('coupons').add({ code: newCode });
-            alert('Coupon added!');
+            try {
+                const newCode = document.getElementById('newCoupon').value;
+                await db.collection('coupons').add({ code: newCode });
+                alert('Coupon added successfully!');
+            } catch (error) {
+                console.error("Add coupon error:", error);
+            }
         }
 
         async function loadPendingPayments() {
-            const snapshot = await db.collection('transactions').where('status', '==', 'Pending').get();
-            document.getElementById('pendingPayments').innerHTML = snapshot.docs.map(doc => {
-                const txn = doc.data();
-                return `<div>${txn.id} - ${txn.upi} <button onclick="approvePayment('${doc.id}')">Approve</button></div>`;
-            }).join('');
+            try {
+                const snapshot = await db.collection('transactions').where('status', '==', 'Pending').get();
+                document.getElementById('pendingPayments').innerHTML = snapshot.docs.map(doc => {
+                    const txn = doc.data();
+                    return `<div style="margin: 10px 0; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+                        ${txn.id} - ${txn.upi}
+                        <button onclick="approvePayment('${doc.id}')" style="margin-left: 10px;">Approve</button>
+                    </div>`;
+                }).join('');
+            } catch (error) {
+                console.error("Load payments error:", error);
+            }
         }
 
         async function approvePayment(docId) {
-            await db.collection('transactions').doc(docId).update({ status: 'Paid' });
-            loadPendingPayments();
+            try {
+                await db.collection('transactions').doc(docId).update({ status: 'Paid' });
+                await loadPendingPayments();
+                alert('Payment approved successfully!');
+            } catch (error) {
+                console.error("Approve payment error:", error);
+            }
         }
 
-        // Copy Transaction ID
         function copyTransactionId() {
             navigator.clipboard.writeText(document.getElementById('transactionId').textContent);
-            alert('Copied to clipboard!');
+            alert('Transaction ID copied to clipboard!');
         }
     </script>
 </body>
