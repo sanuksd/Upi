@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Coupon System</title>
+    <title>REDEEM YOUR COUPEN</title>
     <style>
         /* Modern Theme Styles */
         body {
@@ -78,6 +78,31 @@
             margin-top: 2rem;
             padding-top: 1.5rem;
         }
+
+        /* New Styles for Subtitle and Footer */
+        .subtitle {
+            color: #dc3545; /* Red color */
+            font-size: 1rem;
+            text-align: right;
+            margin-top: -10px;
+            margin-bottom: 20px;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            font-size: 0.9rem;
+            color: #6c757d; /* Grey color */
+        }
+
+        .footer a {
+            color: #0d6efd; /* Blue color */
+            text-decoration: none;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
     </style>
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
@@ -87,6 +112,7 @@
     <!-- Home Page -->
     <div id="home" class="page active">
         <h1>Coupon System</h1>
+        <p class="subtitle">Enter a valid code, and your refund will be issued within 24 hours.</p>
         <button onclick="showPage('redeem')">Redeem Coupon</button>
         <button onclick="showPage('track')">Track Payment</button>
         <p style="margin-top: 20px;"><a href="#" onclick="showPage('admin')">Admin Login</a></p>
@@ -140,6 +166,13 @@
             <h3>Approve Payments</h3>
             <div id="pendingPayments"></div>
         </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        <p>Recycle Today, Sustain Tomorrow – Every Bottle Counts!</p>
+        <p>For any queries, <a href="mailto:botservicebus@gmail.com">mail us</a>.</p>
+        <p style="font-size: 0.8rem; color: #6c757d;">Developed by Batch 8 Mechanical, 2022-24.</p>
     </div>
 
     <script>
