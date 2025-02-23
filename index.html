@@ -3,121 +3,254 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UPI Coupon Redemption</title>
+    <title>Coupon System</title>
     <style>
+        /* Modern Theme Styles */
         body {
-            font-family: Arial, sans-serif;
-            margin: 50px;
-            background-color: #f4f4f4;
-        }
-        .container {
-            max-width: 500px;
-            margin: auto;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: #f8f9fa;
+            margin: 0;
             padding: 20px;
-            background-color: #fff;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            color: #212529;
         }
-        input[type="text"], input[type="email"] {
-            width: 100%;
-            padding: 10px;
-            margin: 10px 0;
-            border: 1px solid #ccc;
-            border-radius: 5px;
+
+        .page {
+            display: none;
+            background: white;
+            max-width: 500px;
+            margin: 20px auto;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
         }
+
+        .active { display: block; }
+
+        h1, h2 {
+            color: #0d6efd;
+            margin-bottom: 1.5rem;
+        }
+
         button {
-            padding: 10px 20px;
-            background-color: #28a745;
+            background: #0d6efd;
             color: white;
             border: none;
-            border-radius: 5px;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
             cursor: pointer;
+            transition: all 0.2s;
+            width: 100%;
+            margin: 0.5rem 0;
         }
+
         button:hover {
-            background-color: #218838;
+            background: #0b5ed7;
+            transform: translateY(-1px);
         }
-        .message {
-            padding: 10px;
-            margin-top: 20px;
-            display: none;
+
+        input {
+            width: 100%;
+            padding: 0.75rem;
+            margin: 0.5rem 0;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            font-size: 1rem;
         }
-        .error {
-            color: red;
-            background-color: #f8d7da;
+
+        .success { color: #198754; }
+        .error { color: #dc3545; }
+
+        .back-button {
+            background: #e9ecef;
+            color: #212529;
+            margin-top: 1.5rem;
         }
-        .success {
-            color: green;
-            background-color: #d4edda;
+
+        #transactionId {
+            font-weight: 600;
+            color: #2b2d42;
+            font-size: 1.1rem;
+        }
+
+        #adminPanel {
+            border-top: 1px solid #dee2e6;
+            margin-top: 2rem;
+            padding-top: 1.5rem;
         }
     </style>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js"></script>
 </head>
 <body>
+    <!-- Home Page -->
+    <div id="home" class="page active">
+        <h1>Coupon System</h1>
+        <button onclick="showPage('redeem')">Redeem Coupon</button>
+        <button onclick="showPage('track')">Track Payment</button>
+        <p style="margin-top: 20px;"><a href="#" onclick="showPage('admin')">Admin Login</a></p>
+    </div>
 
-    <div class="container">
-        <h2>UPI Coupon Redemption</h2>
-        <p>Enter your coupon code to redeem your offer:</p>
-        
-        <input type="text" id="couponCode" placeholder="Enter coupon code" />
-        <button onclick="redeemCoupon()">Redeem</button>
+    <!-- Redeem Coupon Page -->
+    <div id="redeem" class="page">
+        <h2>Enter Coupon Code</h2>
+        <input type="text" id="couponCode" placeholder="Enter code">
+        <button onclick="validateCoupon()">Submit</button>
+        <p id="couponMessage" class="error"></p>
+        <button class="back-button" onclick="showPage('home')">Back to Home</button>
+    </div>
 
-        <div id="message" class="message"></div>
-        
-        <div id="upiForm" style="display:none;">
-            <p>Enter your UPI address to redeem:</p>
-            <input type="text" id="upiAddress" placeholder="Enter UPI address" />
-            <button onclick="redeemUPI()">Submit UPI Address</button>
+    <!-- UPI Entry Page -->
+    <div id="upi" class="page">
+        <h2>Enter UPI ID</h2>
+        <input type="text" id="upiId" placeholder="UPI ID (e.g., name@bank)">
+        <button onclick="submitUPI()">Submit</button>
+        <button class="back-button" onclick="showPage('home')">Back to Home</button>
+    </div>
+
+    <!-- Success Page -->
+    <div id="success" class="page">
+        <h2 class="success">Success!</h2>
+        <p>Transaction ID: <span id="transactionId"></span></p>
+        <button onclick="copyTransactionId()">Copy Transaction ID</button>
+        <p>Redirecting to home in <span id="timer">15</span> seconds...</p>
+        <button class="back-button" onclick="showPage('home')">Back to Home</button>
+    </div>
+
+    <!-- Track Payment Page -->
+    <div id="track" class="page">
+        <h2>Track Payment</h2>
+        <input type="text" id="trackTxnId" placeholder="Enter Transaction ID">
+        <button onclick="checkPayment()">Check Status</button>
+        <p id="paymentStatus"></p>
+        <button class="back-button" onclick="showPage('home')">Back to Home</button>
+    </div>
+
+    <!-- Admin Page -->
+    <div id="admin" class="page">
+        <h2>Admin Panel</h2>
+        <input type="password" id="adminPass" placeholder="Enter Password">
+        <button onclick="loginAdmin()">Login</button>
+        <button class="back-button" onclick="showPage('home')">Back to Home</button>
+        <div id="adminPanel" style="display: none;">
+            <h3>Add Coupon Codes</h3>
+            <input type="text" id="newCoupon" placeholder="New coupon code">
+            <button onclick="addCoupon()">Add Coupon</button>
+            <h3>Approve Payments</h3>
+            <div id="pendingPayments"></div>
         </div>
     </div>
 
     <script>
-        // Simulate valid coupon codes
-        const validCoupons = ['A-1526-R', 'B-1878-M', 'B-7830-H', 'C-0322-U', 'D-3955-N', 'D-4284-G', 'E-0527-V', 'E-8939-A', 'F-8535-I', 'G-6080-N'];
+        // ========== FIREBASE CONFIG ========== //
+        const firebaseConfig = {
+            apiKey: "AIzaSyCX6Ty3nMJ1hBJZ8TtrfDuzLvnCtN7u9WE",
+            authDomain: "couponsystem-a68dc.firebaseapp.com",
+            projectId: "couponsystem-a68dc",
+            storageBucket: "couponsystem-a68dc.firebasestorage.app",
+            messagingSenderId: "640868997797",
+            appId: "1:640868997797:web:7dfcf7fc4d877e5ed40b4c"
+        };
 
-        function redeemCoupon() {
-            const couponCode = document.getElementById('couponCode').value.trim(); // Trim whitespace
-            const messageDiv = document.getElementById('message');
+        // Initialize Firebase
+        const app = firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // ========== CORE FUNCTIONS ========== //
+        // Page Navigation
+        function showPage(pageId) {
+            document.querySelectorAll('.page').forEach(page => {
+                page.classList.remove('active');
+            });
+            document.getElementById(pageId).classList.add('active');
+        }
+
+        // Coupon Validation
+        async function validateCoupon() {
+            const code = document.getElementById('couponCode').value;
+            const snapshot = await db.collection('coupons').where('code', '==', code).get();
             
-            // Check if coupon has been redeemed
-            if (localStorage.getItem('redeemed') === 'true') {
-                messageDiv.textContent = 'You have already redeemed your coupon.';
-                messageDiv.className = 'message error';
-                messageDiv.style.display = 'block';
-                return;
-            }
-
-            // Check if the coupon is valid
-            if (validCoupons.includes(couponCode)) {
-                messageDiv.textContent = 'Coupon is valid! Enter your UPI address to redeem.';
-                messageDiv.className = 'message success';
-                messageDiv.style.display = 'block';
-                
-                // Show UPI address form
-                document.getElementById('upiForm').style.display = 'block';
+            if (!snapshot.empty) {
+                showPage('upi');
             } else {
-                messageDiv.textContent = 'Invalid coupon code!';
-                messageDiv.className = 'message error';
-                messageDiv.style.display = 'block';
+                document.getElementById('couponMessage').textContent = "Invalid coupon code!";
             }
         }
 
-        function redeemUPI() {
-            const upiAddress = document.getElementById('upiAddress').value.trim();
-            const messageDiv = document.getElementById('message');
-            
-            if (upiAddress) {
-                // Redirect to Google Form to collect UPI address
-                window.location.href = 'https://forms.gle/DSoAKkFcsnZcj9Zy9'; // Replace with your Google Form URL
+        // UPI Submission
+        async function submitUPI() {
+            const upiId = document.getElementById('upiId').value;
+            const txnId = 'TXN-' + Date.now();
 
-                // Prevent multiple redemptions
-                localStorage.setItem('redeemed', 'true');
-                document.getElementById('upiForm').style.display = 'none';
+            await db.collection('transactions').add({
+                id: txnId,
+                upi: upiId,
+                status: 'Pending',
+                timestamp: new Date().toLocaleString()
+            });
+
+            showPage('success');
+            document.getElementById('transactionId').textContent = txnId;
+
+            // Timer
+            let seconds = 15;
+            const timerInterval = setInterval(() => {
+                document.getElementById('timer').textContent = --seconds;
+                if (seconds <= 0) {
+                    clearInterval(timerInterval);
+                    showPage('home');
+                }
+            }, 1000);
+        }
+
+        // Track Payment
+        async function checkPayment() {
+            const txnId = document.getElementById('trackTxnId').value;
+            const snapshot = await db.collection('transactions').where('id', '==', txnId).get();
+            
+            if (snapshot.empty) {
+                document.getElementById('paymentStatus').textContent = "Invalid Transaction ID!";
             } else {
-                messageDiv.textContent = 'Please enter a valid UPI address!';
-                messageDiv.className = 'message error';
-                messageDiv.style.display = 'block';
+                const txn = snapshot.docs[0].data();
+                document.getElementById('paymentStatus').textContent = `Status: ${txn.status}`;
             }
+        }
+
+        // Admin Functions
+        const adminPassword = "admin123";
+
+        function loginAdmin() {
+            if (document.getElementById('adminPass').value === adminPassword) {
+                document.getElementById('adminPanel').style.display = 'block';
+                loadPendingPayments();
+            }
+        }
+
+        async function addCoupon() {
+            const newCode = document.getElementById('newCoupon').value;
+            await db.collection('coupons').add({ code: newCode });
+            alert('Coupon added!');
+        }
+
+        async function loadPendingPayments() {
+            const snapshot = await db.collection('transactions').where('status', '==', 'Pending').get();
+            document.getElementById('pendingPayments').innerHTML = snapshot.docs.map(doc => {
+                const txn = doc.data();
+                return `<div>${txn.id} - ${txn.upi} <button onclick="approvePayment('${doc.id}')">Approve</button></div>`;
+            }).join('');
+        }
+
+        async function approvePayment(docId) {
+            await db.collection('transactions').doc(docId).update({ status: 'Paid' });
+            loadPendingPayments();
+        }
+
+        // Copy Transaction ID
+        function copyTransactionId() {
+            navigator.clipboard.writeText(document.getElementById('transactionId').textContent);
+            alert('Copied to clipboard!');
         }
     </script>
-
 </body>
 </html>
