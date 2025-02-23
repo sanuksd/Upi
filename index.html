@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>REDEEM YOUR COUPEN</title>
+    <title>Redeem coupons</title>
     <style>
         /* Modern Theme Styles */
         body {
@@ -79,7 +79,7 @@
             padding-top: 1.5rem;
         }
 
-        /* New Styles for Subtitle and Footer */
+        /* Subtitle and Footer Styles */
         .subtitle {
             color: #dc3545; /* Red color */
             font-size: 1rem;
@@ -172,7 +172,7 @@
     <div class="footer">
         <p>Recycle Today, Sustain Tomorrow – Every Bottle Counts!</p>
         <p>For any queries, <a href="mailto:botservicebus@gmail.com">mail us</a>.</p>
-        <p style="font-size: 0.8rem; color: #6c757d;">Developed by Batch 8 Mechanical, 2022-2025.</p>
+        <p style="font-size: 0.8rem; color: #6c757d;">Developed by Batch 8 Mechanical, 2022-25.</p>
     </div>
 
     <script>
@@ -189,7 +189,10 @@
         // Initialize Firebase
         const app = firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
-        const adminPassword = "admin123"; // Admin password
+        const adminPassword = "mech8"; // Admin password
+
+        // Track current coupon being processed
+        let currentCouponDocId = null;
 
         // ========== CORE FUNCTIONS ========== //
         function showPage(pageId) {
@@ -202,11 +205,18 @@
         async function validateCoupon() {
             try {
                 const code = document.getElementById('couponCode').value;
-                const snapshot = await db.collection('coupons').where('code', '==', code).get();
+                // Check for UNUSED coupons
+                const snapshot = await db.collection('coupons')
+                    .where('code', '==', code)
+                    .where('used', '==', false)
+                    .get();
+
                 if (!snapshot.empty) {
+                    currentCouponDocId = snapshot.docs[0].id; // Store coupon ID
                     showPage('upi');
                 } else {
-                    document.getElementById('couponMessage').textContent = "Invalid coupon code!";
+                    document.getElementById('couponMessage').textContent = 
+                        "Invalid or already used coupon code!";
                 }
             } catch (error) {
                 console.error("Coupon validation error:", error);
@@ -217,14 +227,25 @@
             try {
                 const upiId = document.getElementById('upiId').value;
                 const txnId = 'TXN-' + Date.now();
-                
+
+                // 1. Mark coupon as used
+                await db.collection('coupons').doc(currentCouponDocId).update({
+                    used: true
+                });
+
+                // 2. Create transaction
                 await db.collection('transactions').add({
                     id: txnId,
                     upi: upiId,
                     status: 'Pending',
+                    couponId: currentCouponDocId, // Link transaction to coupon
                     timestamp: new Date().toLocaleString()
                 });
 
+                // Reset coupon tracking
+                currentCouponDocId = null;
+
+                // Rest of success page logic
                 showPage('success');
                 document.getElementById('transactionId').textContent = txnId;
 
@@ -275,7 +296,23 @@
         async function addCoupon() {
             try {
                 const newCode = document.getElementById('newCoupon').value;
-                await db.collection('coupons').add({ code: newCode });
+
+                // Check if coupon already exists
+                const snapshot = await db.collection('coupons')
+                    .where('code', '==', newCode)
+                    .get();
+
+                if (!snapshot.empty) {
+                    alert('Coupon already exists!');
+                    return;
+                }
+
+                // Add new coupon
+                await db.collection('coupons').add({
+                    code: newCode,
+                    used: false // Default to unused
+                });
+
                 alert('Coupon added successfully!');
             } catch (error) {
                 console.error("Add coupon error:", error);
